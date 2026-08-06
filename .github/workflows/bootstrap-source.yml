@@ -1,0 +1,44 @@
+name: Bootstrap FairScreen source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bootstrap/part-10"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bootstrap/part-* > /tmp/fairscreen-source.b64
+          base64 --decode /tmp/fairscreen-source.b64 > /tmp/fairscreen-source.tar.gz
+          mkdir -p /tmp/fairscreen-source
+          tar -xzf /tmp/fairscreen-source.tar.gz -C /tmp/fairscreen-source
+
+      - name: Replace bootstrap files with source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --exclude='.git' /tmp/fairscreen-source/ ./
+          rm -rf bootstrap INITIALIZING.md
+          rm -f .github/workflows/bootstrap-source.yml
+
+      - name: Commit source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add FairScreen application source"
+          git push
