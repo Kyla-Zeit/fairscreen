@@ -1,0 +1,47 @@
+name: Apply verified FairScreen lint fixes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - maintenance/lint-fixes.patch
+      - .github/workflows/apply-lint-fixes.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply verified source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f maintenance/lint-fixes.patch ]]; then
+            echo "No pending patch remains."
+            exit 0
+          fi
+          git apply --check maintenance/lint-fixes.patch
+          git apply maintenance/lint-fixes.patch
+          rm -f maintenance/lint-fixes.patch
+          rmdir maintenance 2>/dev/null || true
+
+      - name: Commit corrected source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix CI lint issues"
+          git push
