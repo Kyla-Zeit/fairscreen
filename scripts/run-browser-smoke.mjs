@@ -31,11 +31,9 @@ const preview = spawn(
 preview.stdout.on("data", (chunk) => {
   const text = chunk.toString();
   process.stdout.write(text);
-  const match = stripAnsi(text).match(
-    /http:\/\/127\.0\.0\.1:\d+\/fairscreen\//,
-  );
+  const match = stripAnsi(text).match(/http:\/\/127\.0\.0\.1:\d+\//);
   if (match) {
-    actualPreviewUrl = match[0];
+    actualPreviewUrl = new URL("fairscreen/", match[0]).toString();
   }
 });
 
