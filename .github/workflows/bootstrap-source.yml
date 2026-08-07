@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "bootstrap/fairscreen-source.tar.gz"
+      - "bootstrap/fairscreen-source-bootstrap.tar.gz"
+      - ".github/workflows/bootstrap-source.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/fairscreen-source
-          tar -xzf bootstrap/fairscreen-source.tar.gz -C /tmp/fairscreen-source
+          tar -xzf bootstrap/fairscreen-source-bootstrap.tar.gz -C /tmp/fairscreen-source
 
       - name: Replace bootstrap files with source tree
         shell: bash
