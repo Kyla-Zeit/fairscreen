@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "bootstrap/part-022"
+      - "bootstrap/fairscreen-source.tar.gz"
 
 permissions:
   contents: write
@@ -16,14 +16,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Reconstruct source archive
+      - name: Extract FairScreen source
         shell: bash
         run: |
           set -euo pipefail
-          cat bootstrap/part-* > /tmp/fairscreen-source.b64
-          base64 --decode /tmp/fairscreen-source.b64 > /tmp/fairscreen-source.tar.gz
           mkdir -p /tmp/fairscreen-source
-          tar -xzf /tmp/fairscreen-source.tar.gz -C /tmp/fairscreen-source
+          tar -xzf bootstrap/fairscreen-source.tar.gz -C /tmp/fairscreen-source
 
       - name: Replace bootstrap files with source tree
         shell: bash
