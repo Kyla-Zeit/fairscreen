@@ -70,14 +70,15 @@ export function createBrowserSpeechRecognitionProvider(): TranscriptionProvider 
 export function createUnavailableTranscriptionProvider(): TranscriptionProvider {
   return {
     kind: "none",
-    getCapability: () => Promise.resolve({
-      status: "unsupported",
-      processingMode: "unknown",
-      disclosureRequired: false,
-      limitations: [
-        "Browser speech recognition is unavailable. A manual transcript can still be entered.",
-      ],
-    }),
+    getCapability: () =>
+      Promise.resolve({
+        status: "unsupported",
+        processingMode: "unknown",
+        disclosureRequired: false,
+        limitations: [
+          "Browser speech recognition is unavailable. A manual transcript can still be entered.",
+        ],
+      }),
     start: () => Promise.resolve(unavailableSession()),
   };
 }
@@ -117,12 +118,14 @@ function startSession(
     return Promise.resolve(unavailableSession());
   }
   if (!input.disclosureAccepted) {
-    return Promise.resolve(unavailableSession({
-      code: "service-not-allowed",
-      recoverable: true,
-      safeMessage:
-        "Speech recognition was not started because disclosure was not accepted.",
-    }));
+    return Promise.resolve(
+      unavailableSession({
+        code: "service-not-allowed",
+        recoverable: true,
+        safeMessage:
+          "Speech recognition was not started because disclosure was not accepted.",
+      }),
+    );
   }
 
   const recognition = new Constructor();
@@ -240,11 +243,13 @@ function startSession(
     recognition.start();
   } catch {
     unregisterAbort?.();
-    return Promise.resolve(unavailableSession({
-      code: "unknown",
-      recoverable: true,
-      safeMessage: "Browser speech recognition could not start.",
-    }));
+    return Promise.resolve(
+      unavailableSession({
+        code: "unknown",
+        recoverable: true,
+        safeMessage: "Browser speech recognition could not start.",
+      }),
+    );
   }
 
   return Promise.resolve({
