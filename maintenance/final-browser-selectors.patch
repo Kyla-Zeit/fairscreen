@@ -1,0 +1,24 @@
+diff --git a/tests/browser/persistence.spec.ts b/tests/browser/persistence.spec.ts
+--- a/tests/browser/persistence.spec.ts
++++ b/tests/browser/persistence.spec.ts
+@@ -9,7 +9,7 @@ test("explicit save survives navigation and reload", async ({ page }) => {
+   await page.getByRole("button", { name: "Start preparation" }).click();
+   await page.getByRole("button", { name: "Start answer now" }).click();
+   await page
+-    .getByLabel("Private answer notes")
++    .getByLabel("Answer text")
+     .fill(
+       "I investigated a difficult issue, documented the evidence, and explained the result clearly to the client.",
+     );
+diff --git a/tests/browser/shell.spec.ts b/tests/browser/shell.spec.ts
+--- a/tests/browser/shell.spec.ts
++++ b/tests/browser/shell.spec.ts
+@@ -311,7 +311,7 @@ test("M10 interview workflow, transcript coaching, and review are keyboard reach
+     interviewStatus.getByText("Answering", { exact: true }),
+   ).toBeVisible();
+ 
+-  await page.getByLabel("Private answer notes").fill("Typed practice notes.");
++  await page.getByLabel("Answer text").fill("Typed practice notes.");
+   await page.getByRole("button", { name: "Finish answer" }).focus();
+   await page.keyboard.press("Enter");
+   await expect(
