@@ -238,7 +238,9 @@ function sha256(message: string): string {
   const rightRotate = (value: number, amount: number) =>
     (value >>> amount) | (value << (32 - amount));
   const words: number[] = [];
-  const ascii = unescape(encodeURIComponent(message));
+  const ascii = Array.from(new TextEncoder().encode(message), (byte) =>
+    String.fromCharCode(byte),
+  ).join("");
   const bitLength = ascii.length * 8;
   const hash = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c,

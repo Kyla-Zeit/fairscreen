@@ -753,6 +753,10 @@ function selectDistinctIdeas(
   return selected;
 }
 
+function firstNonEmpty(...values: readonly (string | undefined)[]): string {
+  return values.find((value) => Boolean(value?.trim()))?.trim() ?? "";
+}
+
 function composeUniqueParagraphs(paragraphs: readonly string[]): string {
   const usedSentences: string[] = [];
   const output: string[] = [];
@@ -825,9 +829,9 @@ function buildIntroductionAnswer(
   );
 
   return composeUniqueParagraphs([
-    current.join(" ") || sentences[0] || "",
+    firstNonEmpty(current.join(" "), sentences[0]),
     evidence.join(" "),
-    future.join(" ") || relevanceClosing(input),
+    firstNonEmpty(future.join(" "), relevanceClosing(input)),
   ]);
 }
 
@@ -867,7 +871,7 @@ function buildMotivationAnswer(
   );
 
   return composeUniqueParagraphs([
-    reasons.join(" ") || sentences[0] || "",
+    firstNonEmpty(reasons.join(" "), sentences[0]),
     evidence.join(" "),
     [future.join(" "), relevanceClosing(input)].filter(Boolean).join(" "),
   ]);
@@ -1166,9 +1170,9 @@ function buildBehaviouralAnswer(
   );
 
   return composeUniqueParagraphs([
-    situation.join(" ") || unused.shift() || "",
-    actions.join(" ") || unused.splice(0, 2).join(" "),
-    outcomes.join(" ") || unused.shift() || "",
+    firstNonEmpty(situation.join(" "), unused.shift()),
+    firstNonEmpty(actions.join(" "), unused.splice(0, 2).join(" ")),
+    firstNonEmpty(outcomes.join(" "), unused.shift()),
   ]);
 }
 
@@ -1207,7 +1211,7 @@ function buildSituationalAnswer(
   );
 
   return composeUniqueParagraphs([
-    firstStep.join(" ") || sentences[0] || "",
+    firstNonEmpty(firstStep.join(" "), sentences[0]),
     actions.join(" "),
     resolution.join(" "),
   ]);
@@ -1239,7 +1243,7 @@ function buildGeneralAnswer(
   );
 
   return composeUniqueParagraphs([
-    direct.join(" ") || sentences[0] || "",
+    firstNonEmpty(direct.join(" "), sentences[0]),
     evidence.join(" "),
     remaining.slice(0, 2).join(" "),
   ]);
@@ -1259,41 +1263,8 @@ function makeTransferableOpening(sentence: string): string {
     .replace(/^My experience\s+(?:has|is)\s+/i, "")
     .trim();
   if (!cleaned) return sentence;
-  const lowered = cleaned[0]?.toLowerCase() + cleaned.slice(1);
+  const lowered = (cleaned[0] ?? "").toLowerCase() + cleaned.slice(1);
   return `My most transferable experience is ${lowered}`;
-}
-
-function takeUnusedGroups(
-  allSentences: readonly string[],
-  groups: readonly (readonly string[])[],
-): string[][] {
-  const used: string[] = [];
-  const result = groups.map((group) => {
-    const selected = selectDistinctIdeas(
-      group.filter(
-        (candidate) =>
-          !used.some((existing) => ideaSimilarity(existing, candidate) >= 0.58),
-      ),
-      4,
-    );
-    used.push(...selected);
-    return selected;
-  });
-
-  const leftovers = allSentences.filter(
-    (candidate) =>
-      !used.some((existing) => ideaSimilarity(existing, candidate) >= 0.58),
-  );
-  for (const group of result) {
-    while (group.length < 2 && leftovers.length > 0) {
-      const candidate = leftovers.shift();
-      if (candidate) {
-        group.push(candidate);
-        used.push(candidate);
-      }
-    }
-  }
-  return result;
 }
 
 function relevanceClosing(
@@ -1332,7 +1303,7 @@ function cleanAnswerSentence(sentence: string): string {
     .replace(/\s+/g, " ")
     .trim();
   if (!cleaned) return "";
-  const capitalized = cleaned[0]?.toUpperCase() + cleaned.slice(1);
+  const capitalized = (cleaned[0] ?? "").toUpperCase() + cleaned.slice(1);
   return /[.!?]$/.test(capitalized) ? capitalized : `${capitalized}.`;
 }
 
@@ -1350,25 +1321,6 @@ function overlapScore(
   return significantTokens(sentence).filter((token) =>
     questionTokens.has(token),
   ).length;
-}
-
-function selectUniqueSentences(
-  candidates: readonly string[],
-  maximum: number,
-): string[] {
-  const selected: string[] = [];
-  const seen = new Set<string>();
-  for (const candidate of candidates) {
-    const key = candidate
-      .toLocaleLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    selected.push(candidate);
-    if (selected.length >= maximum) break;
-  }
-  return selected;
 }
 
 function technicalValidationPrompt(question: string): string {
@@ -1457,30 +1409,6 @@ function directOpening(question: string): string {
     return "My approach would be to first clarify the constraints, then…";
   }
   return "The main point I would emphasize is…";
-}
-
-function findResumeEvidence(
-  resumeText: string | undefined,
-  question: string,
-): string | undefined {
-  if (!resumeText?.trim()) {
-    return undefined;
-  }
-  const questionWords = new Set(significantTokens(question));
-  const candidates = resumeText
-    .split(/\n|(?<=[.!?])\s+/)
-    .map((line) => line.trim())
-    .filter((line) => line.length >= 25 && line.length <= 220);
-  let best: { line: string; score: number } | undefined;
-  for (const line of candidates) {
-    const score = significantTokens(line).filter((word) =>
-      questionWords.has(word),
-    ).length;
-    if (!best || score > best.score) {
-      best = { line, score };
-    }
-  }
-  return best && best.score > 0 ? truncate(best.line, 180) : undefined;
 }
 
 function summarizeTranscript(text: string): string {

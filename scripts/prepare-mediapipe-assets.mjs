@@ -9,7 +9,6 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -80,7 +79,7 @@ async function prepareModel() {
 
   const response = await fetch(modelUrl, {
     redirect: "follow",
-    signal: AbortSignal.timeout(120_000),
+    signal: globalThis.AbortSignal.timeout(120_000),
   });
 
   if (!response.ok) {

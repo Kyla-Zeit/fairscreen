@@ -2001,7 +2001,9 @@ export function InterviewPage() {
                   setTranscriptReviewError(null);
                 }}
                 onConfirm={confirmTranscriptReview}
-                onContinueWithoutAnalysis={saveWithoutContentAnalysis}
+                onContinueWithoutAnalysis={() => {
+                  void saveWithoutContentAnalysis();
+                }}
                 result={transcriptResult}
                 text={transcriptText}
               />

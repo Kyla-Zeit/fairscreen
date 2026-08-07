@@ -162,8 +162,8 @@ export const interviewContextSchema = z
   .object({
     jobTitle: codePointLimitedString(120),
     company: codePointLimitedString(120).optional(),
-    companyWebsiteUrl: z.string().url().max(2_000).optional(),
-    jobPostingUrl: z.string().url().max(2_000).optional(),
+    companyWebsiteUrl: z.url().max(2_000).optional(),
+    jobPostingUrl: z.url().max(2_000).optional(),
     jobPostingImport: z.unknown().optional(),
     jobDescription: codePointLimitedString(20_000).optional(),
     resumeText: codePointLimitedString(20_000).optional(),

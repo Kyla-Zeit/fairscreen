@@ -16,7 +16,6 @@ import type {
   DeleteScope,
   FairScreenRepository,
   PageRequest,
-  PageResult,
   QuarantinedRecord,
   SessionSearchQuery,
   StorageOpenState,
@@ -256,7 +255,12 @@ function isPersistedCoreSnapshot(
   value: unknown,
 ): value is PersistedCoreSnapshot {
   if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<PersistedCoreSnapshot>;
+  const candidate = value as {
+    readonly schemaVersion?: unknown;
+    readonly sessions?: unknown;
+    readonly responses?: unknown;
+    readonly settings?: unknown;
+  };
   return (
     candidate.schemaVersion === 1 &&
     Array.isArray(candidate.sessions) &&

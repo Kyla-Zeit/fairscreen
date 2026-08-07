@@ -339,7 +339,7 @@ function createResponseRecords(
         ...(attempt.interruptionReason
           ? { interruptionReason: attempt.interruptionReason }
           : {}),
-        createdAt: attempt.startedAt ?? updatedAt,
+        createdAt: attempt.startedAt,
         updatedAt,
       } satisfies QuestionResponse;
     });

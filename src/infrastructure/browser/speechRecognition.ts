@@ -62,15 +62,15 @@ interface SpeechRecognitionWindow extends Window {
 export function createBrowserSpeechRecognitionProvider(): TranscriptionProvider {
   return {
     kind: "browser-speech",
-    getCapability: async () => capability(),
-    start: async (input, signal) => startSession(input, signal),
+    getCapability: () => Promise.resolve(capability()),
+    start: (input, signal) => startSession(input, signal),
   };
 }
 
 export function createUnavailableTranscriptionProvider(): TranscriptionProvider {
   return {
     kind: "none",
-    getCapability: async () => ({
+    getCapability: () => Promise.resolve({
       status: "unsupported",
       processingMode: "unknown",
       disclosureRequired: false,
@@ -78,7 +78,7 @@ export function createUnavailableTranscriptionProvider(): TranscriptionProvider 
         "Browser speech recognition is unavailable. A manual transcript can still be entered.",
       ],
     }),
-    start: async () => unavailableSession(),
+    start: () => Promise.resolve(unavailableSession()),
   };
 }
 
@@ -108,21 +108,21 @@ function capability(): TranscriptionCapability {
   };
 }
 
-async function startSession(
+function startSession(
   input: TranscriptionStartInput,
   signal?: CancellationSignal,
 ): Promise<TranscriptionSession> {
   const Constructor = recognitionConstructor();
   if (!Constructor) {
-    return unavailableSession();
+    return Promise.resolve(unavailableSession());
   }
   if (!input.disclosureAccepted) {
-    return unavailableSession({
+    return Promise.resolve(unavailableSession({
       code: "service-not-allowed",
       recoverable: true,
       safeMessage:
         "Speech recognition was not started because disclosure was not accepted.",
-    });
+    }));
   }
 
   const recognition = new Constructor();
@@ -191,7 +191,7 @@ async function startSession(
     ) {
       const result = event.results[index];
       const alternative = result?.[0];
-      const text = alternative?.transcript?.replace(/\s+/g, " ").trim();
+      const text = alternative?.transcript.replace(/\s+/g, " ").trim();
       if (!result || !text) continue;
       if (result.isFinal) {
         finalText = `${finalText} ${text}`.trim();
@@ -240,14 +240,14 @@ async function startSession(
     recognition.start();
   } catch {
     unregisterAbort?.();
-    return unavailableSession({
+    return Promise.resolve(unavailableSession({
       code: "unknown",
       recoverable: true,
       safeMessage: "Browser speech recognition could not start.",
-    });
+    }));
   }
 
-  return {
+  return Promise.resolve({
     sessionId,
     stop: () => {
       if (stopPromise) return stopPromise;
@@ -294,7 +294,7 @@ async function startSession(
       listener(currentResult());
       return () => listeners.delete(listener);
     },
-  };
+  });
 }
 
 function unavailableSession(error?: TranscriptionError): TranscriptionSession {
@@ -316,7 +316,7 @@ function unavailableSession(error?: TranscriptionError): TranscriptionSession {
   };
   return {
     sessionId: `speech:unavailable:${Date.now()}`,
-    stop: async () => result,
+    stop: () => Promise.resolve(result),
     abort: () => undefined,
     subscribe: (listener) => {
       listener(result);
