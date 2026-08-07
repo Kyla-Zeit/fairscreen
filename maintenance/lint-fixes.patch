@@ -1,0 +1,386 @@
+diff --git a/scripts/prepare-mediapipe-assets.mjs b/scripts/prepare-mediapipe-assets.mjs
+index 964518c..d57f79b 100644
+--- a/scripts/prepare-mediapipe-assets.mjs
++++ b/scripts/prepare-mediapipe-assets.mjs
+@@ -9,7 +9,6 @@ import {
+   writeFile,
+ } from "node:fs/promises";
+ import path from "node:path";
+-import process from "node:process";
+ import { fileURLToPath } from "node:url";
+ 
+ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+@@ -80,7 +79,7 @@ async function prepareModel() {
+ 
+   const response = await fetch(modelUrl, {
+     redirect: "follow",
+-    signal: AbortSignal.timeout(120_000),
++    signal: globalThis.AbortSignal.timeout(120_000),
+   });
+ 
+   if (!response.ok) {
+diff --git a/src/features/analysis/DeterministicAnswerAnalyzer.ts b/src/features/analysis/DeterministicAnswerAnalyzer.ts
+index fa1dcba..6b13562 100644
+--- a/src/features/analysis/DeterministicAnswerAnalyzer.ts
++++ b/src/features/analysis/DeterministicAnswerAnalyzer.ts
+@@ -753,6 +753,10 @@ function selectDistinctIdeas(
+   return selected;
+ }
+ 
++function firstNonEmpty(...values: readonly (string | undefined)[]): string {
++  return values.find((value) => Boolean(value?.trim()))?.trim() ?? "";
++}
++
+ function composeUniqueParagraphs(paragraphs: readonly string[]): string {
+   const usedSentences: string[] = [];
+   const output: string[] = [];
+@@ -825,9 +829,9 @@ function buildIntroductionAnswer(
+   );
+ 
+   return composeUniqueParagraphs([
+-    current.join(" ") || sentences[0] || "",
++    firstNonEmpty(current.join(" "), sentences[0]),
+     evidence.join(" "),
+-    future.join(" ") || relevanceClosing(input),
++    firstNonEmpty(future.join(" "), relevanceClosing(input)),
+   ]);
+ }
+ 
+@@ -867,7 +871,7 @@ function buildMotivationAnswer(
+   );
+ 
+   return composeUniqueParagraphs([
+-    reasons.join(" ") || sentences[0] || "",
++    firstNonEmpty(reasons.join(" "), sentences[0]),
+     evidence.join(" "),
+     [future.join(" "), relevanceClosing(input)].filter(Boolean).join(" "),
+   ]);
+@@ -1166,9 +1170,9 @@ function buildBehaviouralAnswer(
+   );
+ 
+   return composeUniqueParagraphs([
+-    situation.join(" ") || unused.shift() || "",
+-    actions.join(" ") || unused.splice(0, 2).join(" "),
+-    outcomes.join(" ") || unused.shift() || "",
++    firstNonEmpty(situation.join(" "), unused.shift()),
++    firstNonEmpty(actions.join(" "), unused.splice(0, 2).join(" ")),
++    firstNonEmpty(outcomes.join(" "), unused.shift()),
+   ]);
+ }
+ 
+@@ -1207,7 +1211,7 @@ function buildSituationalAnswer(
+   );
+ 
+   return composeUniqueParagraphs([
+-    firstStep.join(" ") || sentences[0] || "",
++    firstNonEmpty(firstStep.join(" "), sentences[0]),
+     actions.join(" "),
+     resolution.join(" "),
+   ]);
+@@ -1239,7 +1243,7 @@ function buildGeneralAnswer(
+   );
+ 
+   return composeUniqueParagraphs([
+-    direct.join(" ") || sentences[0] || "",
++    firstNonEmpty(direct.join(" "), sentences[0]),
+     evidence.join(" "),
+     remaining.slice(0, 2).join(" "),
+   ]);
+@@ -1259,43 +1263,10 @@ function makeTransferableOpening(sentence: string): string {
+     .replace(/^My experience\s+(?:has|is)\s+/i, "")
+     .trim();
+   if (!cleaned) return sentence;
+-  const lowered = cleaned[0]?.toLowerCase() + cleaned.slice(1);
++  const lowered = (cleaned[0] ?? "").toLowerCase() + cleaned.slice(1);
+   return `My most transferable experience is ${lowered}`;
+ }
+ 
+-function takeUnusedGroups(
+-  allSentences: readonly string[],
+-  groups: readonly (readonly string[])[],
+-): string[][] {
+-  const used: string[] = [];
+-  const result = groups.map((group) => {
+-    const selected = selectDistinctIdeas(
+-      group.filter(
+-        (candidate) =>
+-          !used.some((existing) => ideaSimilarity(existing, candidate) >= 0.58),
+-      ),
+-      4,
+-    );
+-    used.push(...selected);
+-    return selected;
+-  });
+-
+-  const leftovers = allSentences.filter(
+-    (candidate) =>
+-      !used.some((existing) => ideaSimilarity(existing, candidate) >= 0.58),
+-  );
+-  for (const group of result) {
+-    while (group.length < 2 && leftovers.length > 0) {
+-      const candidate = leftovers.shift();
+-      if (candidate) {
+-        group.push(candidate);
+-        used.push(candidate);
+-      }
+-    }
+-  }
+-  return result;
+-}
+-
+ function relevanceClosing(
+   input: PracticeAnalysisInput,
+   fallback = "That experience is relevant because it shows how I would contribute in this role.",
+@@ -1332,7 +1303,7 @@ function cleanAnswerSentence(sentence: string): string {
+     .replace(/\s+/g, " ")
+     .trim();
+   if (!cleaned) return "";
+-  const capitalized = cleaned[0]?.toUpperCase() + cleaned.slice(1);
++  const capitalized = (cleaned[0] ?? "").toUpperCase() + cleaned.slice(1);
+   return /[.!?]$/.test(capitalized) ? capitalized : `${capitalized}.`;
+ }
+ 
+@@ -1352,25 +1323,6 @@ function overlapScore(
+   ).length;
+ }
+ 
+-function selectUniqueSentences(
+-  candidates: readonly string[],
+-  maximum: number,
+-): string[] {
+-  const selected: string[] = [];
+-  const seen = new Set<string>();
+-  for (const candidate of candidates) {
+-    const key = candidate
+-      .toLocaleLowerCase()
+-      .replace(/[^a-z0-9]+/g, " ")
+-      .trim();
+-    if (!key || seen.has(key)) continue;
+-    seen.add(key);
+-    selected.push(candidate);
+-    if (selected.length >= maximum) break;
+-  }
+-  return selected;
+-}
+-
+ function technicalValidationPrompt(question: string): string {
+   const subject = /dependency|service|provider|integration/i.test(question)
+     ? "the dependency failure path"
+@@ -1459,30 +1411,6 @@ function directOpening(question: string): string {
+   return "The main point I would emphasize is…";
+ }
+ 
+-function findResumeEvidence(
+-  resumeText: string | undefined,
+-  question: string,
+-): string | undefined {
+-  if (!resumeText?.trim()) {
+-    return undefined;
+-  }
+-  const questionWords = new Set(significantTokens(question));
+-  const candidates = resumeText
+-    .split(/\n|(?<=[.!?])\s+/)
+-    .map((line) => line.trim())
+-    .filter((line) => line.length >= 25 && line.length <= 220);
+-  let best: { line: string; score: number } | undefined;
+-  for (const line of candidates) {
+-    const score = significantTokens(line).filter((word) =>
+-      questionWords.has(word),
+-    ).length;
+-    if (!best || score > best.score) {
+-      best = { line, score };
+-    }
+-  }
+-  return best && best.score > 0 ? truncate(best.line, 180) : undefined;
+-}
+-
+ function summarizeTranscript(text: string): string {
+   const sentences = text
+     .split(/(?<=[.!?])\s+/)
+diff --git a/src/features/interview/InterviewPage.tsx b/src/features/interview/InterviewPage.tsx
+index f2708bb..431c091 100644
+--- a/src/features/interview/InterviewPage.tsx
++++ b/src/features/interview/InterviewPage.tsx
+@@ -2001,7 +2001,9 @@ export function InterviewPage() {
+                   setTranscriptReviewError(null);
+                 }}
+                 onConfirm={confirmTranscriptReview}
+-                onContinueWithoutAnalysis={saveWithoutContentAnalysis}
++                onContinueWithoutAnalysis={() => {
++                  void saveWithoutContentAnalysis();
++                }}
+                 result={transcriptResult}
+                 text={transcriptText}
+               />
+diff --git a/src/features/interview/progressPersistence.ts b/src/features/interview/progressPersistence.ts
+index c62d05d..8c300a4 100644
+--- a/src/features/interview/progressPersistence.ts
++++ b/src/features/interview/progressPersistence.ts
+@@ -339,7 +339,7 @@ function createResponseRecords(
+         ...(attempt.interruptionReason
+           ? { interruptionReason: attempt.interruptionReason }
+           : {}),
+-        createdAt: attempt.startedAt ?? updatedAt,
++        createdAt: attempt.startedAt,
+         updatedAt,
+       } satisfies QuestionResponse;
+     });
+diff --git a/src/features/transcription/transcription.ts b/src/features/transcription/transcription.ts
+index dbe4e2e..2004cb8 100644
+--- a/src/features/transcription/transcription.ts
++++ b/src/features/transcription/transcription.ts
+@@ -238,7 +238,9 @@ function sha256(message: string): string {
+   const rightRotate = (value: number, amount: number) =>
+     (value >>> amount) | (value << (32 - amount));
+   const words: number[] = [];
+-  const ascii = unescape(encodeURIComponent(message));
++  const ascii = Array.from(new TextEncoder().encode(message), (byte) =>
++    String.fromCharCode(byte),
++  ).join("");
+   const bitLength = ascii.length * 8;
+   const hash = [
+     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c,
+diff --git a/src/infrastructure/browser/speechRecognition.ts b/src/infrastructure/browser/speechRecognition.ts
+index 4730122..e7a29be 100644
+--- a/src/infrastructure/browser/speechRecognition.ts
++++ b/src/infrastructure/browser/speechRecognition.ts
+@@ -62,15 +62,15 @@ interface SpeechRecognitionWindow extends Window {
+ export function createBrowserSpeechRecognitionProvider(): TranscriptionProvider {
+   return {
+     kind: "browser-speech",
+-    getCapability: async () => capability(),
+-    start: async (input, signal) => startSession(input, signal),
++    getCapability: () => Promise.resolve(capability()),
++    start: (input, signal) => startSession(input, signal),
+   };
+ }
+ 
+ export function createUnavailableTranscriptionProvider(): TranscriptionProvider {
+   return {
+     kind: "none",
+-    getCapability: async () => ({
++    getCapability: () => Promise.resolve({
+       status: "unsupported",
+       processingMode: "unknown",
+       disclosureRequired: false,
+@@ -78,7 +78,7 @@ export function createUnavailableTranscriptionProvider(): TranscriptionProvider
+         "Browser speech recognition is unavailable. A manual transcript can still be entered.",
+       ],
+     }),
+-    start: async () => unavailableSession(),
++    start: () => Promise.resolve(unavailableSession()),
+   };
+ }
+ 
+@@ -108,21 +108,21 @@ function capability(): TranscriptionCapability {
+   };
+ }
+ 
+-async function startSession(
++function startSession(
+   input: TranscriptionStartInput,
+   signal?: CancellationSignal,
+ ): Promise<TranscriptionSession> {
+   const Constructor = recognitionConstructor();
+   if (!Constructor) {
+-    return unavailableSession();
++    return Promise.resolve(unavailableSession());
+   }
+   if (!input.disclosureAccepted) {
+-    return unavailableSession({
++    return Promise.resolve(unavailableSession({
+       code: "service-not-allowed",
+       recoverable: true,
+       safeMessage:
+         "Speech recognition was not started because disclosure was not accepted.",
+-    });
++    }));
+   }
+ 
+   const recognition = new Constructor();
+@@ -191,7 +191,7 @@ async function startSession(
+     ) {
+       const result = event.results[index];
+       const alternative = result?.[0];
+-      const text = alternative?.transcript?.replace(/\s+/g, " ").trim();
++      const text = alternative?.transcript.replace(/\s+/g, " ").trim();
+       if (!result || !text) continue;
+       if (result.isFinal) {
+         finalText = `${finalText} ${text}`.trim();
+@@ -240,14 +240,14 @@ async function startSession(
+     recognition.start();
+   } catch {
+     unregisterAbort?.();
+-    return unavailableSession({
++    return Promise.resolve(unavailableSession({
+       code: "unknown",
+       recoverable: true,
+       safeMessage: "Browser speech recognition could not start.",
+-    });
++    }));
+   }
+ 
+-  return {
++  return Promise.resolve({
+     sessionId,
+     stop: () => {
+       if (stopPromise) return stopPromise;
+@@ -294,7 +294,7 @@ async function startSession(
+       listener(currentResult());
+       return () => listeners.delete(listener);
+     },
+-  };
++  });
+ }
+ 
+ function unavailableSession(error?: TranscriptionError): TranscriptionSession {
+@@ -316,7 +316,7 @@ function unavailableSession(error?: TranscriptionError): TranscriptionSession {
+   };
+   return {
+     sessionId: `speech:unavailable:${Date.now()}`,
+-    stop: async () => result,
++    stop: () => Promise.resolve(result),
+     abort: () => undefined,
+     subscribe: (listener) => {
+       listener(result);
+diff --git a/src/infrastructure/storage/repositories/LocalStorageFairScreenRepository.ts b/src/infrastructure/storage/repositories/LocalStorageFairScreenRepository.ts
+index 4465f93..3f08d23 100644
+--- a/src/infrastructure/storage/repositories/LocalStorageFairScreenRepository.ts
++++ b/src/infrastructure/storage/repositories/LocalStorageFairScreenRepository.ts
+@@ -16,7 +16,6 @@ import type {
+   DeleteScope,
+   FairScreenRepository,
+   PageRequest,
+-  PageResult,
+   QuarantinedRecord,
+   SessionSearchQuery,
+   StorageOpenState,
+@@ -256,7 +255,12 @@ function isPersistedCoreSnapshot(
+   value: unknown,
+ ): value is PersistedCoreSnapshot {
+   if (!value || typeof value !== "object") return false;
+-  const candidate = value as Partial<PersistedCoreSnapshot>;
++  const candidate = value as {
++    readonly schemaVersion?: unknown;
++    readonly sessions?: unknown;
++    readonly responses?: unknown;
++    readonly settings?: unknown;
++  };
+   return (
+     candidate.schemaVersion === 1 &&
+     Array.isArray(candidate.sessions) &&
+diff --git a/src/infrastructure/storage/schemas/domainSchemas.ts b/src/infrastructure/storage/schemas/domainSchemas.ts
+index 107ac8d..4f1311a 100644
+--- a/src/infrastructure/storage/schemas/domainSchemas.ts
++++ b/src/infrastructure/storage/schemas/domainSchemas.ts
+@@ -162,8 +162,8 @@ export const interviewContextSchema = z
+   .object({
+     jobTitle: codePointLimitedString(120),
+     company: codePointLimitedString(120).optional(),
+-    companyWebsiteUrl: z.string().url().max(2_000).optional(),
+-    jobPostingUrl: z.string().url().max(2_000).optional(),
++    companyWebsiteUrl: z.url().max(2_000).optional(),
++    jobPostingUrl: z.url().max(2_000).optional(),
+     jobPostingImport: z.unknown().optional(),
+     jobDescription: codePointLimitedString(20_000).optional(),
+     resumeText: codePointLimitedString(20_000).optional(),
