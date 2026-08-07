@@ -22,18 +22,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf /tmp/fairscreen-source
           mkdir -p /tmp/fairscreen-source
           tar -xzf bootstrap/fairscreen-source-bootstrap.tar.gz -C /tmp/fairscreen-source
 
-      - name: Replace bootstrap files with source tree
+      - name: Replace bootstrap files with application source
         shell: bash
         run: |
           set -euo pipefail
-          rsync -a --exclude='.git' /tmp/fairscreen-source/ ./
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github/workflows' \
+            /tmp/fairscreen-source/ ./
           rm -rf bootstrap INITIALIZING.md
-          rm -f .github/workflows/bootstrap-source.yml
 
-      - name: Commit source tree
+      - name: Commit application source
         shell: bash
         run: |
           set -euo pipefail
