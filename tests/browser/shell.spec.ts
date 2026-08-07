@@ -311,7 +311,9 @@ test("M10 interview workflow, transcript coaching, and review are keyboard reach
     interviewStatus.getByText("Answering", { exact: true }),
   ).toBeVisible();
 
-  await page.getByLabel("Manual transcript").fill("Typed practice notes.");
+  await page
+    .getByLabel("Private answer notes")
+    .fill("Typed practice notes.");
   await page.getByRole("button", { name: "Finish answer" }).focus();
   await page.keyboard.press("Enter");
   await expect(
@@ -537,7 +539,7 @@ test("M08.3 job context keeps sticky navigation and makes no external request be
   expect([...externalRequests]).toEqual([]);
 });
 
-test("routes do not call media, permission, capability, or storage APIs on load", async ({
+test("routes avoid media and permission calls while storage initializes once", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -580,7 +582,7 @@ test("routes do not call media, permission, capability, or storage APIs on load"
       value: {
         open: () => {
           instrumentedWindow.__fairScreenApiCalls.indexedDbOpen = 1;
-          throw new Error("Unexpected IndexedDB open");
+          throw new Error("Simulated IndexedDB failure");
         },
       },
     });
@@ -602,7 +604,7 @@ test("routes do not call media, permission, capability, or storage APIs on load"
   expect(counts).toEqual({
     enumerateDevices: 0,
     getUserMedia: 0,
-    indexedDbOpen: 0,
+    indexedDbOpen: 1,
     permissionQuery: 0,
   });
 });
