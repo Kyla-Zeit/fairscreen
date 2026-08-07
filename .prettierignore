@@ -1,0 +1,9 @@
+docs/spec/
+node_modules/
+dist/
+.npm-cache/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+public/mediapipe/wasm/

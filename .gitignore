@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.npm-cache/
+coverage/
+playwright-report/
+test-results/
+preview.*.log
+preview.pid
+*.local
+
+# Generated from pinned MediaPipe sources by scripts/prepare-mediapipe-assets.mjs
+public/mediapipe/models/*.task
+public/mediapipe/wasm/vision_wasm_*_internal.js
+public/mediapipe/wasm/vision_wasm_*_internal.wasm
+public/mediapipe/wasm/vision_wasm_internal.js
+public/mediapipe/wasm/vision_wasm_internal.wasm

@@ -1,0 +1,140 @@
+:root {
+  --fs-color-navy-950: #07111f;
+  --fs-color-navy-900: #0d1b2a;
+  --fs-color-navy-800: #17304a;
+  --fs-color-surface-page: #f5f7fa;
+  --fs-color-surface-card: #ffffff;
+  --fs-color-surface-subtle: #edf2f6;
+  --fs-color-text-strong: #172033;
+  --fs-color-text-muted: #526176;
+  --fs-color-border: #cbd5e1;
+  --fs-color-teal-700: #0f766e;
+  --fs-color-teal-600: #0d9488;
+  --fs-color-link: #1d4ed8;
+  --fs-color-focus: #0b66ff;
+  --fs-color-positive: #067647;
+  --fs-color-caution: #8a4b08;
+  --fs-color-danger: #b42318;
+  --fs-color-info-bg: #eaf2ff;
+  --fs-color-privacy-bg: #e8f7f4;
+  --fs-color-caution-bg: #fff4e5;
+  --fs-color-danger-bg: #fdecec;
+  --fs-font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --fs-space-1: 0.25rem;
+  --fs-space-2: 0.5rem;
+  --fs-space-3: 0.75rem;
+  --fs-space-4: 1rem;
+  --fs-space-5: 1.25rem;
+  --fs-space-6: 1.5rem;
+  --fs-space-8: 2rem;
+  --fs-space-10: 2.5rem;
+  --fs-space-12: 3rem;
+  --fs-space-16: 4rem;
+  --fs-space-20: 5rem;
+  --fs-radius-control: 0.5rem;
+  --fs-radius-card: 0.875rem;
+  --fs-radius-panel: 1.25rem;
+  --fs-shadow-card: 0 8px 24px rgb(7 17 31 / 8%);
+  --fs-page-gutter: 1rem;
+  --fs-page-max: 75rem;
+  --fs-reading-max: 47.5rem;
+  --fs-focus-ring: 3px solid var(--fs-color-focus);
+  --fs-focus-offset: 3px;
+  --fs-duration-fast: 150ms;
+}
+
+@theme {
+  --font-sans: var(--fs-font-sans);
+  --color-navy-950: var(--fs-color-navy-950);
+  --color-navy-900: var(--fs-color-navy-900);
+  --color-navy-800: var(--fs-color-navy-800);
+  --color-surface-page: var(--fs-color-surface-page);
+  --color-surface-card: var(--fs-color-surface-card);
+  --color-surface-subtle: var(--fs-color-surface-subtle);
+  --color-text-strong: var(--fs-color-text-strong);
+  --color-text-muted: var(--fs-color-text-muted);
+  --color-focus: var(--fs-color-focus);
+  --color-positive: var(--fs-color-positive);
+  --color-caution: var(--fs-color-caution);
+  --color-danger: var(--fs-color-danger);
+  --radius-control: var(--fs-radius-control);
+  --radius-card: var(--fs-radius-card);
+  --shadow-card: var(--fs-shadow-card);
+  --breakpoint-xs: 20rem;
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+}
+
+[data-theme="high-contrast"] {
+  --fs-color-surface-page: #ffffff;
+  --fs-color-surface-card: #ffffff;
+  --fs-color-text-strong: #000000;
+  --fs-color-text-muted: #1f2937;
+  --fs-color-border: #000000;
+  --fs-color-link: #0039a6;
+  --fs-color-focus: #ffbf00;
+  --fs-focus-ring: 3px solid var(--fs-color-focus);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --fs-page-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --fs-page-gutter: 2.5rem;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --fs-color-border: #000000;
+    --fs-color-text-muted: #1f2937;
+    --fs-focus-ring: 3px solid var(--fs-color-focus);
+  }
+}
+
+@media (forced-colors: active) {
+  :root {
+    --fs-color-border: CanvasText;
+    --fs-focus-ring: 3px solid Highlight;
+  }
+
+  .button,
+  .comparison-card,
+  .disclosure,
+  .empty-state,
+  .info-card,
+  .limitation-panel,
+  .mobile-menu-sheet,
+  .notice,
+  .nav-link,
+  .option-grid li,
+  .path-card,
+  .privacy-badge,
+  .privacy-banner,
+  .status,
+  .table-wrap,
+  td,
+  th {
+    border-color: CanvasText;
+    forced-color-adjust: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

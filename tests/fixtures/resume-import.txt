@@ -1,0 +1,2 @@
+Browser fixture resume
+Skills: accessibility, TypeScript, local-first storage

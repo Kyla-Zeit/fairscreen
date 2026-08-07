@@ -1,0 +1,62 @@
+@media print {
+  :root {
+    --fs-color-surface-page: #ffffff;
+    --fs-color-surface-card: #ffffff;
+    --fs-color-text-strong: #000000;
+    --fs-color-text-muted: #000000;
+    --fs-color-border: #000000;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .skip-link,
+  .site-header,
+  .mobile-menu-layer,
+  .button {
+    display: none !important;
+  }
+
+  .site-footer {
+    border-block-start: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .page-stack {
+    padding-block: 1rem;
+  }
+
+  .notice,
+  .status,
+  .info-card,
+  .section-block,
+  .split-section,
+  .privacy-banner,
+  .limitation-panel,
+  .empty-state,
+  .disclosure {
+    break-inside: avoid;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  details.disclosure > summary {
+    display: block;
+  }
+
+  details.disclosure > :not(summary) {
+    display: block !important;
+  }
+
+  table {
+    min-width: 0;
+  }
+
+  th,
+  td {
+    border-color: #000000;
+  }
+}
