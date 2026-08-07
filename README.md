@@ -1,16 +1,6 @@
 # FairScreen
 
-FairScreen is a static, local-first interview-practice application. This repository completes **M01 Foundation**, **M02 Public
-Experience**, **M03 Local Data**, **M04 Setup and Device Check**, **M05
-Deterministic Question Provider**, **M06 Interview Workflow**, **M07 Audio
-Measurement and Recording**, separately gated **M07.1 Resume File Import** and
-**M07.2 Upload-only Resume Input** enhancements, **M08 Video Condition
-Measurement**, the **M08.1 Production Worker Bundling Repair**, and the
-**M08.2 Session Lifecycle and Combined-media Reliability Repair**, and
-**M08.3 Job Context, Company Research, Resume Metadata, Navigation, and
-Packaging**, **M09 Reviewed Transcription and Delivery Review**, **M10
-Question-aware Coaching and Live Prompts**, and **M11 Reports, Saved Sessions,
-Notes, Deletion, and Export**.
+FairScreen is a static, local-first interview-practice application.
 
 ## Specification
 
