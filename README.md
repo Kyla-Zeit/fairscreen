@@ -15,7 +15,7 @@ decision-log documents.
   `M11 reports, saved sessions, notes, deletion, and export`
 - Application version: `0.11.10`
 
-The current build focuses on the complete interview-practice, reporting, and saved-session workflow. The former Fairness Lab page has been removed.
+The current build focuses on the complete interview-practice, reporting, and saved-session workflow. 
 
 ## Runtime
 
