@@ -1,8 +1,7 @@
 diff --git a/tests/browser/shell.spec.ts b/tests/browser/shell.spec.ts
 --- a/tests/browser/shell.spec.ts
 +++ b/tests/browser/shell.spec.ts
-@@ -487,12 +487,7 @@ test("M08 camera journey lazy-loads the real production video worker", async ({
-     workerResponses.some((response) => /\.ts($|\?)/.test(response.url)),
+@@ -489,9 +489,5 @@ test("M08 camera journey lazy-loads the real production video worker", async ({
    ).toBe(false);
  
 -  await expect(
@@ -13,4 +12,3 @@ diff --git a/tests/browser/shell.spec.ts b/tests/browser/shell.spec.ts
 +  await expect(page.getByText("Camera active.")).toBeVisible();
  
    expect(
-     videoAssetRequests.every((requestUrl) =>
