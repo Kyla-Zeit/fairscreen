@@ -488,11 +488,7 @@ test("M08 camera journey lazy-loads the real production video worker", async ({
     workerResponses.some((response) => /\.ts($|\?)/.test(response.url)),
   ).toBe(false);
 
-  await expect(
-    page.getByText(
-      /Video analysis active|Local video analysis could not initialize/,
-    ),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Camera active.")).toBeVisible();
 
   expect(
     videoAssetRequests.every((requestUrl) =>
