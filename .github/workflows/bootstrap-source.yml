@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "bootstrap/part-10"
+      - "bootstrap/part-022"
 
 permissions:
   contents: write
