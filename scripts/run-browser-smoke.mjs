@@ -1,92 +1,147 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
+import { createServer } from "node:http";
 import path from "node:path";
 import process from "node:process";
-import { setTimeout as delay } from "node:timers/promises";
 
 const root = process.cwd();
-const requestedPreviewUrl = "http://127.0.0.1:4173/fairscreen/";
-const viteBin = path.join(root, "node_modules", "vite", "bin", "vite.js");
+const host = "127.0.0.1";
+const port = 4173;
+const appPath = "/fairscreen/";
+const appUrl = `http://${host}:${port}${appPath}`;
+const distRoot = path.resolve(root, "dist");
+const indexPath = path.join(distRoot, "index.html");
 const playwrightBin = path.join(root, "node_modules", "playwright", "cli.js");
-let actualPreviewUrl = "";
 
-if (!existsSync(viteBin)) {
-  throw new Error("Vite CLI was not found. Run npm ci first.");
-}
+const contentTypes = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".html", "text/html; charset=utf-8"],
+  [".ico", "image/x-icon"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".mjs", "text/javascript; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml"],
+  [".task", "application/octet-stream"],
+  [".wasm", "application/wasm"],
+  [".webmanifest", "application/manifest+json"],
+]);
 
-if (!existsSync(playwrightBin)) {
-  throw new Error("Playwright CLI was not found. Run npm ci first.");
-}
+await stat(indexPath);
+await stat(playwrightBin);
 
-const preview = spawn(
-  process.execPath,
-  [viteBin, "preview", "--host", "127.0.0.1", "--port", "4173"],
-  {
-    cwd: root,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  },
-);
-
-preview.stdout.on("data", (chunk) => {
-  const text = chunk.toString();
-  process.stdout.write(text);
-  const match = stripAnsi(text).match(/http:\/\/127\.0\.0\.1:\d+\//);
-  if (match) {
-    actualPreviewUrl = new URL("fairscreen/", match[0]).toString();
-  }
+const server = createServer((request, response) => {
+  void serveRequest(request, response);
 });
 
-preview.stderr.on("data", (chunk) => {
-  process.stderr.write(chunk);
-});
+await startServer();
+console.log(`FairScreen browser-test server: ${appUrl}`);
 
 try {
-  await waitForPreview();
-  const exitCode = await runPlaywright();
-  process.exitCode = exitCode;
+  process.exitCode = await runPlaywright();
 } finally {
-  await stopPreview();
+  await stopServer();
 }
 
-async function waitForPreview() {
-  const startedAt = Date.now();
-  const timeoutMs = 30_000;
+function startServer() {
+  return new Promise((resolve, reject) => {
+    const onError = (error) => {
+      server.off("listening", onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      server.off("error", onError);
+      resolve();
+    };
 
-  while (Date.now() - startedAt < timeoutMs) {
-    if (preview.exitCode !== null) {
-      throw new Error(
-        `Vite preview exited early with code ${preview.exitCode}.`,
-      );
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, host);
+  });
+}
+
+async function serveRequest(request, response) {
+  try {
+    const requestUrl = new URL(
+      request.url ?? "/",
+      `http://${request.headers.host ?? `${host}:${port}`}`,
+    );
+
+    if (!requestUrl.pathname.startsWith(appPath)) {
+      respond(response, 404, "text/plain; charset=utf-8", "Not found");
+      return;
     }
 
-    if (!actualPreviewUrl) {
-      await delay(250);
-      continue;
+    const relativePath = decodeURIComponent(
+      requestUrl.pathname.slice(appPath.length),
+    );
+    const requestedPath = relativePath
+      ? path.resolve(distRoot, relativePath)
+      : indexPath;
+
+    if (!isInsideDist(requestedPath)) {
+      respond(response, 404, "text/plain; charset=utf-8", "Not found");
+      return;
     }
 
-    try {
-      const response = await fetch(actualPreviewUrl);
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      await delay(250);
+    const filePath = await resolveFile(requestedPath, relativePath);
+    if (!filePath) {
+      respond(response, 404, "text/plain; charset=utf-8", "Not found");
+      return;
     }
+
+    const body = await readFile(filePath);
+    response.writeHead(200, {
+      "Cache-Control": "no-store",
+      "Content-Type":
+        contentTypes.get(path.extname(filePath).toLowerCase()) ??
+        "application/octet-stream",
+    });
+    response.end(request.method === "HEAD" ? undefined : body);
+  } catch (error) {
+    console.error(error);
+    respond(
+      response,
+      500,
+      "text/plain; charset=utf-8",
+      "Browser-test server error",
+    );
   }
+}
 
-  throw new Error(
-    `Vite preview did not become ready. Requested ${requestedPreviewUrl}.`,
+async function resolveFile(requestedPath, relativePath) {
+  try {
+    const fileStats = await stat(requestedPath);
+    if (fileStats.isFile()) return requestedPath;
+    if (fileStats.isDirectory()) return indexPath;
+  } catch {
+    if (!path.extname(relativePath)) return indexPath;
+  }
+  return undefined;
+}
+
+function isInsideDist(candidatePath) {
+  return (
+    candidatePath === distRoot ||
+    candidatePath.startsWith(`${distRoot}${path.sep}`)
   );
 }
 
-async function runPlaywright() {
+function respond(response, statusCode, contentType, body) {
+  response.writeHead(statusCode, {
+    "Cache-Control": "no-store",
+    "Content-Type": contentType,
+  });
+  response.end(body);
+}
+
+function runPlaywright() {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [playwrightBin, "test"], {
       cwd: root,
       env: {
         ...process.env,
-        PLAYWRIGHT_BASE_URL: actualPreviewUrl,
+        PLAYWRIGHT_BASE_URL: appUrl,
         PW_TEST_HTML_REPORT_OPEN: "never",
       },
       stdio: "inherit",
@@ -99,43 +154,15 @@ async function runPlaywright() {
   });
 }
 
-async function stopPreview() {
-  if (preview.exitCode !== null) {
-    return;
-  }
-
-  preview.kill();
-
-  const exited = await Promise.race([
-    new Promise((resolve) => {
-      preview.once("exit", () => {
-        resolve(true);
-      });
-    }),
-    delay(5_000).then(() => false),
-  ]);
-
-  if (!exited && process.platform === "win32" && preview.pid) {
-    await new Promise((resolve) => {
-      const killer = spawn(
-        "taskkill",
-        ["/PID", String(preview.pid), "/T", "/F"],
-        {
-          stdio: "ignore",
-          windowsHide: true,
-        },
-      );
-      killer.on("exit", () => {
-        resolve(undefined);
-      });
+function stopServer() {
+  return new Promise((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
     });
-  }
-}
-
-function stripAnsi(text) {
-  const escapeCharacter = String.fromCharCode(27);
-  return text.replace(
-    new RegExp(`${escapeCharacter}\\[[0-?]*[ -/]*[@-~]`, "g"),
-    "",
-  );
+    server.closeAllConnections?.();
+  });
 }
