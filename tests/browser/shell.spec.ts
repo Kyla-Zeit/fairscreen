@@ -311,7 +311,7 @@ test("M10 interview workflow, transcript coaching, and review are keyboard reach
     interviewStatus.getByText("Answering", { exact: true }),
   ).toBeVisible();
 
-  await page.getByLabel("Private answer notes").fill("Typed practice notes.");
+  await page.getByLabel("Answer text").fill("Typed practice notes.");
   await page.getByRole("button", { name: "Finish answer" }).focus();
   await page.keyboard.press("Enter");
   await expect(

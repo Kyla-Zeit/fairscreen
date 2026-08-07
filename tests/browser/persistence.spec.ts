@@ -9,7 +9,7 @@ test("explicit save survives navigation and reload", async ({ page }) => {
   await page.getByRole("button", { name: "Start preparation" }).click();
   await page.getByRole("button", { name: "Start answer now" }).click();
   await page
-    .getByLabel("Private answer notes")
+    .getByLabel("Answer text")
     .fill(
       "I investigated a difficult issue, documented the evidence, and explained the result clearly to the client.",
     );
